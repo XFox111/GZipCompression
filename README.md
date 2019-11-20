@@ -1,4 +1,6 @@
 # GZipCompression
+
+[![Build](https://github.com/xfox111/GZipCompression/workflows/.NET%20CI/badge.svg?branch=master)](https://github.com/xfox111/GZipCompression/actions)
 ![GitHub release (latest by date)](https://img.shields.io/github/v/release/xfox111/GZipCompression)
 ![GitHub issues](https://img.shields.io/github/issues/xfox111/GZipCompression)
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
