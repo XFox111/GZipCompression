@@ -3,99 +3,73 @@ using System.IO;
 
 namespace GZipTest
 {
-    class Program
-    {
-        static DateTime start = DateTime.Now;
-        static IProcessingModule module;
+	class Program
+	{
+		static IProcessingModule module;
 
-        static int Main(string[] args)
-        {
-            try
-            {
-                //Validating input parameters
-                if (args.Length != 3)
-                    throw new InvalidDataException("Invalid parameters set.\nUsage: NewWinRar.exe [compress|decompress] [source file name] [destination file name]");
-                if (!File.Exists(args[1]))
-                    throw new FileNotFoundException("The source file not found. Make sure it is place in the program's directory and has the same name. Stating extension is required");
+		static int Main(string[] args)
+		{
+			// Validating input parameters
+			if (args.Length < 1)	// If there's no parameters provided, display help
+			{
+				DisplayHelp();
+				return 0;
+			}
 
-                //Instatiating module
-                switch (args[0].ToLower())
-                {
-                    case "compress":
-                        Console.WriteLine("Compressing file...");
-                        module = new CompressionModule();
-                        break;
-                    case "decompress":
-                        Console.WriteLine("Unpacking file...");
-                        module = new DecompressionModule();
-                        break;
-                    default:
-                        throw new InvalidDataException("Invalid parameter. The first parameter must be 'compress' or 'decompress'");
-                }
+			// Instatiating module
+			switch (args[0].ToLower())
+			{
+				case "compress":
+					Console.WriteLine("Compressing file...");
+					module = new CompressionModule();
+					break;
+				case "decompress":
+					Console.WriteLine("Unpacking file...");
+					module = new DecompressionModule();
+					break;
+				case "help":
+					DisplayHelp();
+					return 0;
+				default:
+					throw new InvalidDataException("Invalid parameter. The first parameter must be 'compress', 'decompress' or 'help'");
+			}
 
-                //Subscribing to events
-                module.ProgressChanged += SetProgress;
-                module.Complete += Complete;
-                module.ErrorOccured += Module_ErrorOccured;
+			if (args.Length < 3)
+				throw new InvalidDataException("Target file or destination file path missing. Type 'help' to get usage information");
+			if (!File.Exists(args[1]))
+				throw new FileNotFoundException("The source file not found. Check provided path and try again. Stating extension is required");
 
-                //Executing module
-                module.Run(args[1], args[2]);
+			//Executing module
+			module.Run(input: args[1],
+					   output: args[2]);
 
-                return 0;
-            }
-            //Catching errors and displaying them
-            catch (Exception e)
-            {
-                Console.Error.WriteLine($"\n\n{e.ToString()}\n" + e.InnerException != null && e.InnerException != e ? $"\n{e.InnerException.ToString()}\n" : "");
-                return 1;
-            }
-        }
+			while (module.IsWorking);	// Get UI thread busy while in progress
 
-        private static void Module_ErrorOccured(object sender, ErrorEventArgs e)
-        {
-            Console.Error.WriteLine("Error has occured. Threads tremination initiated");
-            Console.Error.WriteLine($"\n\n{e.GetException().ToString()}\n");
-            module.Complete -= Complete;
-            Console.WriteLine("Press any key to continue...");
-            Console.ReadKey();
-            module.Stop();
-        }
+			Console.WriteLine("Press any key to continue...");
+			Console.ReadKey();
 
-        /// <summary>
-        /// Displays complete message and post analysis
-        /// </summary>
-        /// <param name="size">Represents original file size in MB</param>
-        /// <param name="e">Not used</param>
-        private static void Complete(object size, EventArgs e)
-        {
-            TimeSpan elapsed = DateTime.Now - start;
-            Console.WriteLine($"\nDone\nProcessed {size} MB within {elapsed.Minutes} minutes {elapsed.Seconds} seconds\nPress any key to continue...");
-            Console.ReadKey();
-        }
+			return 0;
+		}
 
-        /// <summary>
-        /// Displaying progress bar which represents current workflow position
-        /// </summary>
-        /// <param name="percentage">Integer from 0 to 100. Represents amount of completed work</param>
-        public static void SetProgress(long done, long totalSegments)
-        {
-            TimeSpan elapsed = DateTime.Now - start;
-            //Border braces
-            Console.CursorLeft = 0;
-            Console.Write("[");
-            Console.CursorLeft = 21;
-            Console.Write("]");
+		/// <summary>
+		/// Displays program descriptions and usage instructions
+		/// </summary>
+		static void DisplayHelp()
+		{
+			Console.WriteLine("Compresses or decompresses files. Compressed archives cannot be opened with other archivers.\n");
+			Console.WriteLine("USAGE:\n" +
+				"GZipTest [OPERATION] [SOURCE] [TARGET]\n");
 
-            //Progress bar
-            for (int i = 0; i < done * 20 / totalSegments; i++)
-            {
-                Console.CursorLeft = i + 1;
-                Console.Write("■");
-            }
+			Console.WriteLine("Parameters:");
+			Console.WriteLine("OPERATION \t Operation which will be executed by the program - compression or decompression. Required.");
+			Console.WriteLine("\t Valid values: compress | decompress | help");
 
-            //Percentage
-            Console.CursorLeft = 23;
-            Console.Write($"{done * 100 / totalSegments}%   {done} of {totalSegments} blocks [{elapsed.ToString(@"hh\:mm\:ss")}]");
-        }
-    }
+			Console.WriteLine("\nSOURCE \t\t Relative or absolute path to file which will be processed by the program. Required.");
+
+			Console.WriteLine("\nTARGET \t\t Relative or absolute path to destination file which will be created after the program work. Required.");
+
+			Console.WriteLine("\nPress any key to continue...");
+			Console.ReadKey();
+		}
+	}
 }
